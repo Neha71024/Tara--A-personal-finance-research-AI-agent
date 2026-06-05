@@ -1,30 +1,95 @@
-# tara
+# Tara - Personal Finance Research Assistant
 
-Welcome to your new [Mastra](https://mastra.ai/) project! We're excited to see what you'll build.
+Welcome to the **Tara** Finance-Research Agent project. This project is built using the **Mastra SDK**, **Node.js**, **Express**, and **PostgreSQL**.
 
-## Getting Started
+---
 
-Start the development server:
+## 1. Prerequisites & Setup
 
-```shell
+### Database (PostgreSQL)
+Ensure you have a running PostgreSQL instance on port `5432` with a `postgres` superuser.
+If you have Docker installed, you can start one instantly:
+```bash
+docker run -d --name tara-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:latest
+```
+
+### Environment Variables
+Configure the environment file. Create or edit the `.env` file in the `tara` directory:
+```env
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/provue_tara
+```
+
+---
+
+## 2. Installation & Initialization
+
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Initialize Database Schema**:
+   This script verifies the connection, creates the target database (`provue_tara`), and initializes the tables:
+   ```bash
+   node scripts/check-db.js
+   ```
+
+3. **Ingest Sample Data**:
+   Ingest the sample data snapshot from the `data/sample_a` folder (or specify any other folder path via the `DATA_DIR` environment variable):
+   ```bash
+   npx tsx scripts/ingest.ts
+   ```
+
+---
+
+## 3. Running the Project
+
+You can run the Mastra Studio interface and/or the production API server.
+
+### Start the Express API Server (Production ask endpoint)
+Exposes the required `/ask` endpoint on port `3000`:
+```bash
+npx tsx src/server.ts
+```
+Or in development watch mode:
+```bash
+npx tsx watch src/server.ts
+```
+
+### Start Mastra Studio (Development environment)
+Starts the Mastra Studio playground on **[http://localhost:4111](http://localhost:4111)**:
+```bash
 npm run dev
 ```
 
-Open [http://localhost:4111](http://localhost:4111) in your browser to access [Mastra Studio](https://mastra.ai/docs/studio/overview). It provides an interactive UI for building and testing your agents, along with a REST API that exposes your Mastra application as a local service. This lets you start building without worrying about integration right away.
+---
 
-You can start editing files inside the `src/mastra` directory. The development server will automatically reload whenever you make changes.
+## 4. Running Evaluations
 
-## Learn more
+We provide a repeatable evaluation script containing 12 finance-related queries (lookups, date ranges, refunds, merchant aliases, transfers, comparisons, recurring checks, and mutual fund return math).
 
-To learn more about Mastra, visit our [documentation](https://mastra.ai/docs/). Your bootstrapped project includes example code for [agents](https://mastra.ai/docs/agents/overview), [tools](https://mastra.ai/docs/agents/using-tools), [workflows](https://mastra.ai/docs/workflows/overview), [scorers](https://mastra.ai/docs/evals/overview), and [observability](https://mastra.ai/docs/observability/overview).
+Run the tests against the local server:
+```bash
+npx tsx scripts/eval.ts
+```
 
-If you're new to AI agents, check out our [course](https://mastra.ai/learn) and [YouTube videos](https://youtube.com/@mastra-ai). You can also join our [Discord](https://discord.gg/BTYqqHKUrf) community to get help and share your projects.
+*Note: If your API key is rate-limited or exhausted during local testing, you can enable mock mode for verification:*
+```bash
+# In Windows Powershell:
+$env:MOCK_LLM="true"; npx tsx scripts/eval.ts
+```
 
-## Deploy to the Mastra platform
+---
 
-The [Mastra platform](https://projects.mastra.ai) provides two products for deploying and managing AI applications built with the Mastra framework:
+## 5. Observability & Logging
 
-- **Studio**: A hosted visual environment for testing agents, running workflows, and inspecting traces
-- **Server**: A production deployment target that runs your Mastra application as an API server
-
-Learn more in the [Mastra platform documentation](https://mastra.ai/docs/mastra-platform/overview).
+Every request sent to `/ask` is logged as a structured JSON entry in **`tara.log`** containing:
+* `request_id` (a generated UUID)
+* `original_question`
+* `tools_called` (chronological list of executed tools)
+* `sanitized_tool_inputs`
+* `database_tables_read`
+* `latency_ms`
+* `status` (success or error)
+* `error_message` (if applicable)
