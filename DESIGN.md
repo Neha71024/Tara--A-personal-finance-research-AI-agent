@@ -135,3 +135,27 @@ To log API calls without introducing heavy external telemetry dependencies, we i
    * `latency_ms`
    * `status` (success/error)
    * `error_message` (if any)
+
+---
+
+## 6. Architectural Decisions & Tradeoffs
+
+### 6.1 Synchronous Tool Execution (Async Milestone Decision)
+We chose to execute all tools synchronously rather than implementing the optional async background worker queue (e.g. BullMQ/Redis) for the following reasons:
+1. **Low Latency Database Queries**: With a clean Postgres schema design and proper index coverage on query-intensive columns (`date`, `category`, `merchant`, composite PK on `fund_nav`), all aggregate computations, date filter searches, and return calculations execute in under 10ms.
+2. **Simplified Resource Footprint**: Eliminating background queue workers and external dependencies like Redis keeps the deployment lightweight, cost-effective, and easy to run on Render's free tier.
+3. **Optimized User Experience**: Because the response times are extremely low, a synchronous request-response flow is more intuitive and avoids polling latency for the user.
+
+### 6.2 Deployment & Tradeoffs
+We deployed the backend Express API server on **Render** (Free Web Service tier), backed by a cloud-managed PostgreSQL database hosted on **Neon**.
+* **Cold Starts**: Render's Free tier automatically spins down the container after 15 minutes of inactivity, resulting in a 30-50 second delay on the first query (cold start). We documented this in the setup guide.
+* **Database Connection Limits**: Neon's free tier has connection limits. We configure a lightweight connection pool (`max: 10`) in `pg` to manage and reuse connections safely without exhausting them.
+* **Storage Limits**: Neon provides 1 GB of storage, which easily accommodates the ~1500 transaction records but would require table archiving, partitioning, or cleanup scripts for high-volume enterprise production.
+
+### 6.3 Potential Failure Modes & Future Improvements
+1. **Unrecognized Merchant Aliases**: If a user asks about a merchant under a completely generic name (e.g., "my favorite coffee shop" instead of "Starbucks"), the query uses `ILIKE` wildcard matching and will fail. 
+   * *Future Work*: We would integrate semantic search using PostgreSQL's `pgvector` extension to map colloquial query descriptions to database merchant strings.
+2. **LLM Key Rate Limiting**: The Gemini free-tier key has low RPM/TPM limits and can easily fail under consecutive queries. 
+   * *Future Work*: We would implement model routing failovers (e.g., falling back to Claude 3.5 Sonnet or GPT-4o-mini) and cache frequent answers.
+3. **Complex Multi-Step Intent Failures**: Multi-step questions requiring nested sub-queries can sometimes confuse the LLM context routing.
+   * *Future Work*: We would build Mastra Workflows (DAGs) to enforce structured execution steps for complex comparisons instead of relying purely on single-turn LLM generation loops.

@@ -19,6 +19,10 @@ If you have Docker installed, you can start one instantly:
 docker run -d --name tara-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:latest
 ```
 
+### LLM Model & Provider
+* **Model**: `google/gemini-3.5-flash`
+* **Provider**: Google Gemini (requires the `GOOGLE_GENERATIVE_AI_API_KEY` API key)
+
 ### Environment Variables
 Configure the environment file. Create or edit the `.env` file in the `tara` directory:
 ```env
