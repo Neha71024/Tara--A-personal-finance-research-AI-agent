@@ -9,6 +9,25 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  return res.json({
+    status: 'ok',
+    message: 'Tara Finance-Research AI Agent API is running! Please use POST /ask to query the agent.',
+    endpoint: {
+      path: '/ask',
+      method: 'POST',
+      body_format: { question: 'your question here' }
+    }
+  });
+});
+
+app.get('/ask', (req, res) => {
+  return res.status(405).json({
+    error: 'Method Not Allowed',
+    message: 'The /ask endpoint only supports POST requests. Please send a POST request with a JSON body: {"question": "your question"}'
+  });
+});
+
 app.post('/ask', async (req, res) => {
   const startTime = Date.now();
   const { question } = req.body;
