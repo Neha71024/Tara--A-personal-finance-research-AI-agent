@@ -2,6 +2,12 @@
 
 Welcome to the **Tara** Finance-Research Agent project. This project is built using the **Mastra SDK**, **Node.js**, **Express**, and **PostgreSQL**.
 
+## Live Deployment
+The API server is deployed on Render and is fully operational:
+* **Ask Endpoint**: `https://tara-a-personal-finance-research-ai-agent.onrender.com/ask`
+* **Method**: `POST`
+* **Body**: `{"question": "<your spending or mutual fund question>"}`
+
 ---
 
 ## 1. Prerequisites & Setup
